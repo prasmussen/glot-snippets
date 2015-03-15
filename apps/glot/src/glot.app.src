@@ -1,0 +1,21 @@
+{application, glot, [
+  {description, "glot - Snippets API"},
+  {vsn, "1.0.0"},
+  {registered, []},
+  {applications, [
+    kernel,
+    stdlib,
+    crypto,
+    compiler,
+    syntax_tools,
+    goldrush,
+    lager,
+    cowboy,
+    jsx,
+    hackney,
+    couchbeam,
+    iso8601
+  ]},
+  {mod, { glot_app, []}},
+  {env, []}
+]}.
