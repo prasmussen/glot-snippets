@@ -11,7 +11,7 @@
 get_by_token(Token) ->
     case user_srv:get_by_token(Token) of
         [] -> {error, not_found};
-        [Doc] -> Doc
+        [Doc] -> {ok, Doc}
     end.
 
 get(Id) ->

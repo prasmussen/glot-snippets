@@ -47,6 +47,7 @@ list_by_owner_map_func() ->
     "    language: doc.language,"
     "    title: doc.title,"
     "    public: doc.public,"
+    "    owner: doc.owner,"
     "  });"
     "}"
     >>.

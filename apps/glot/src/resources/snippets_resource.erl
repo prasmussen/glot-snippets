@@ -5,15 +5,23 @@
     allowed_methods/2,
     content_types_accepted/2,
     content_types_provided/2,
+    resource_exists/2,
+    allow_missing_post/2,
     list/2,
     accept_post/2
 ]).
+
+-define(WRONG_TOKEN, <<"Wrong auth token">>).
+
+-record(state, {
+    user_id
+}).
 
 init(_Transport, _Req, _Opts) ->
     {upgrade, protocol, cowboy_rest}.
 
 rest_init(Req, []) ->
-    {ok, Req, []}.
+    {ok, Req, #state{}}.
 
 allowed_methods(Req, State) ->
     {[<<"GET">>, <<"POST">>], Req, State}.
@@ -30,27 +38,58 @@ content_types_provided(Req, State) ->
     ],
     {Handlers, Req, State}.
 
-list(Req, State) ->
-    Owner = <<"136eeed948805a00846ad95939037ff8">>,
-    Snippets = snippet:list_by_owner(Owner),
+resource_exists(Req, State) ->
+    case lookup_user_id(Req) of
+        {ok, UserId} ->
+            {true, Req, #state{user_id=UserId}};
+        {error, not_found} ->
+            Data = jsx:encode(#{message => ?WRONG_TOKEN}),
+            Req2 = cowboy_req:set_resp_body(Data, Req),
+            {false, Req2, State}
+    end.
+
+allow_missing_post(Req, State) ->
+    {false, Req, State}.
+
+% TODO: Add pagination
+list(Req, State=#state{user_id=UserId}) ->
+    Snippets = snippet:list_by_owner(UserId),
     {prepare_list_response(Snippets), Req, State}.
 
 accept_post(Req, State) ->
     http_util:decode_body(fun save_snippet/3, Req, State).
 
-save_snippet(Data, Req, State) ->
-    Owner = <<"136eeed948805a00846ad95939037ff8">>,
-    NormalizeData = [{<<"owner">>, Owner}|normalize(Data)],
-    Snippet = snippet:save(NormalizeData),
+save_snippet(Data, Req, State=#state{user_id=UserId}) ->
+    Snippet = snippet:save(normalize(UserId, Data)),
     Req2 = cowboy_req:set_resp_body(prepare_response(Snippet), Req),
     {true, Req2, State}.
 
-normalize(Data) ->
+lookup_user_id(Req) ->
+    case cowboy_req:parse_header(<<"authorization">>, Req) of
+        {ok, {<<"token">>, Token}, _} -> get_user_id(Token);
+        _ -> {ok, <<"anonymous">>}
+    end.
+
+get_user_id(Token) ->
+    case users:get_by_token(Token) of
+        {ok, User} -> {ok, proplists:get_value(<<"id">>, User)};
+        Error -> Error
+    end.
+
+normalize(<<"anonymous">>=UserId, Data) ->
+    % Ensure that anonymous snippets are public
+    NewData = [{<<"public">>, true}|proplists:delete(<<"public">>, Data)],
+    normalize_foo(UserId, NewData);
+normalize(UserId, Data) ->
+    normalize_foo(UserId, Data).
+
+normalize_foo(UserId, Data) ->
     Files = [normalize_file(X) || X <- proplists:get_value(<<"files">>, Data, [])],
     [
         {<<"language">>, proplists:get_value(<<"language">>, Data, <<>>)},
         {<<"title">>, proplists:get_value(<<"title">>, Data, <<"untitled">>)},
         {<<"public">>, proplists:get_value(<<"public">>, Data, false)},
+        {<<"owner">>, UserId},
         {<<"files">>, Files}
     ].
 
@@ -72,7 +111,6 @@ prepare_response(Snippet) ->
     Mutators = [
         fun(X) -> proplists:delete(<<"_id">>, X) end,
         fun(X) -> proplists:delete(<<"_rev">>, X) end,
-        fun(X) -> proplists:delete(<<"owner">>, X) end,
         fun(X) -> [{<<"id">>, Id}, {<<"url">>, get_url(Id)}|X] end
     ],
     NewSnippet = lists:foldl(fun(F, Acc) -> F(Acc) end, Snippet, Mutators),
