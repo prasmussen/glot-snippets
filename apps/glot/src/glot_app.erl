@@ -21,10 +21,6 @@ start(_StartType, _StartArgs) ->
 stop(_State) ->
     ok.
 
-% users:
-% {id: $uuid, token: $token}
-% snippet owner: $user.uuid
-
 start_http_server() ->
     Dispatch = cowboy_router:compile([
         {'_', [

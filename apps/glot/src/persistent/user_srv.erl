@@ -1,4 +1,4 @@
--module(snippet_srv).
+-module(user_srv).
 -behaviour(gen_server).
 -export([
     start_link/0,
@@ -10,19 +10,20 @@
     code_change/3,
     terminate/2,
 
-    list_by_owner/1,
+    get_by_token/1,
     get/1,
+    list/0,
     save/1,
     delete/1
 ]).
 
 -record(state, {
     server,
-    db    
+    db
 }).
 
 setup(Server) ->
-    {ok, Db} = couchbeam:open_or_create_db(Server, "snippets"),
+    {ok, Db} = couchbeam:open_or_create_db(Server, "users"),
     create_or_update_design(Db),
     Db.
 
@@ -37,27 +38,33 @@ create_or_update_design(Db) ->
     end,
     couchbeam:save_doc(Db, NewDesign).
 
-list_by_owner_map_func() ->
+get_by_token_map_func() ->
     <<
     "function(doc) {"
-    "  emit(doc.owner, {"
+    "  emit(doc.token, {"
     "    id: doc._id,"
-    "    created: doc.created,"
-    "    modified: doc.modified,"
-    "    language: doc.language,"
-    "    title: doc.title,"
-    "    public: doc.public,"
+    "    token: doc.token,"
     "  });"
+    "}"
+    >>.
+
+list_map_func() ->
+    <<
+    "function(doc) {"
+    "  emit(doc._id, doc);"
     "}"
     >>.
 
 design_doc() ->
     util:jsx_to_jiffy_terms([
-        {<<"_id">>, <<"_design/snippets">>},
+        {<<"_id">>, <<"_design/users">>},
         {<<"language">>, <<"javascript">>},
         {<<"views">>, [
-            {<<"list_by_owner">>, [
-                {<<"map">>, list_by_owner_map_func()}
+            {<<"get_by_token">>, [
+                {<<"map">>, get_by_token_map_func()}
+            ]},
+            {<<"list">>, [
+                {<<"map">>, list_map_func()}
             ]}
         ]}
     ]).
@@ -76,8 +83,12 @@ init([]) ->
 stop() ->
     gen_server:call(?MODULE, stop).
 
-handle_call({list_by_owner, Owner}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner"}, [{key, Owner}]),
+handle_call({get_by_token, Token}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"users", "get_by_token"}, [{key, Token}]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    {reply, format_rows(Rows), State};
+handle_call({list}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"users", "list"}, []),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
 handle_call({get, Id}, _From, State=#state{db=Db}) ->
@@ -86,11 +97,11 @@ handle_call({get, Id}, _From, State=#state{db=Db}) ->
         Error -> Error
     end,
     {reply, Res, State};
-handle_call({save, Snippet}, _From, State=#state{db=Db}) ->
-    {ok, Res} = couchbeam:save_doc(Db, util:jsx_to_jiffy_terms(Snippet)),
+handle_call({save, User}, _From, State=#state{db=Db}) ->
+    {ok, Res} = couchbeam:save_doc(Db, util:jsx_to_jiffy_terms(User)),
     {reply, util:jiffy_to_jsx_terms(Res), State};
-handle_call({delete, Snippet}, _From, State=#state{db=Db}) ->
-    couchbeam:delete_doc(Db, util:jsx_to_jiffy_terms(Snippet)),
+handle_call({delete, User}, _From, State=#state{db=Db}) ->
+    couchbeam:delete_doc(Db, util:jsx_to_jiffy_terms(User)),
     {reply, ok, State};
 handle_call(_Event, _From, State) ->
     {noreply, State}.
@@ -107,17 +118,20 @@ code_change(_OldVsc, State, _Extra) ->
 terminate(Reason, _State) ->
     Reason.
 
-list_by_owner(Owner) ->
-    gen_server:call(?MODULE, {list_by_owner, Owner}).
+get_by_token(Token) ->
+    gen_server:call(?MODULE, {get_by_token, Token}).
 
 get(Id) ->
     gen_server:call(?MODULE, {get, Id}).
 
-save(Snippet) ->
-    gen_server:call(?MODULE, {save, Snippet}).
+list() ->
+    gen_server:call(?MODULE, {list}).
 
-delete(Snippet) ->
-    gen_server:call(?MODULE, {delete, Snippet}).
+save(User) ->
+    gen_server:call(?MODULE, {save, User}).
+
+delete(User) ->
+    gen_server:call(?MODULE, {delete, User}).
 
 format_rows(Rows) ->
     [proplists:get_value(<<"value">>, X) || X <- Rows].
