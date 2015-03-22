@@ -3,6 +3,7 @@
     init/3,
     rest_init/2,
     allowed_methods/2,
+    options/2,
     content_types_accepted/2,
     content_types_provided/2,
     resource_exists/2,
@@ -23,8 +24,16 @@ init(_Transport, _Req, _Opts) ->
 rest_init(Req, []) ->
     {ok, Req, #state{}}.
 
+methods() ->
+    [<<"OPTIONS">>, <<"GET">>, <<"POST">>].
+
 allowed_methods(Req, State) ->
-    {[<<"GET">>, <<"POST">>], Req, State}.
+    {methods(), Req, State}.
+
+options(Req, State) ->
+    Req2 = http_util:add_cors_headers(Req, methods()),
+    Req3 = http_util:add_allow_header(Req2, methods()),
+    {ok, Req3, State}.
 
 content_types_accepted(Req, State) ->
     Handlers = [
@@ -54,7 +63,8 @@ allow_missing_post(Req, State) ->
 % TODO: Add pagination
 list(Req, State=#state{user_id=UserId}) ->
     Snippets = snippet:list_by_owner(UserId),
-    {prepare_list_response(Snippets), Req, State}.
+    Req2 = http_util:add_cors_headers(Req, methods()),
+    {prepare_list_response(Snippets), Req2, State}.
 
 accept_post(Req, State) ->
     http_util:decode_body(fun save_snippet/3, Req, State).
@@ -62,7 +72,8 @@ accept_post(Req, State) ->
 save_snippet(Data, Req, State=#state{user_id=UserId}) ->
     Snippet = snippet:save(normalize(UserId, Data)),
     Req2 = cowboy_req:set_resp_body(prepare_response(Snippet), Req),
-    {true, Req2, State}.
+    Req3 = http_util:add_cors_headers(Req2, methods()),
+    {true, Req3, State}.
 
 lookup_user_id(Req) ->
     case cowboy_req:parse_header(<<"authorization">>, Req) of

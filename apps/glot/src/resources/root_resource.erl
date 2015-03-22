@@ -29,8 +29,7 @@ root(Req, State) ->
         version => config:glot_version(),
         urls => #{
             admin => <<BaseUrl/binary, "/admin">>,
-            languages => <<BaseUrl/binary, "/languages">>
+            snippets => <<BaseUrl/binary, "/snippets">>
         }
     },
     {jsx:encode(Data), Req, State}.
-

@@ -2,7 +2,8 @@
 
 -export([
     decode_body/3,
-    add_cors_headers/1,
+    add_cors_headers/2,
+    add_allow_header/2,
     log_request/1,
     log_response/4
 ]).
@@ -69,13 +70,22 @@ decode_body(F, Req, State) ->
             {halt, Req3, State}
     end.
 
-add_cors_headers(Req) ->
+add_cors_headers(Req, Methods) ->
     Headers = [
-        {<<"access-control-allow-methods">>, <<"POST, OPTIONS">>},
+        {<<"access-control-allow-methods">>, join_methods(Methods)},
         {<<"access-control-allow-origin">>, <<"*">>},
         {<<"access-control-allow-headers">>, <<"Content-Type">>}
     ],
     set_headers(Headers, Req).
+
+add_allow_header(Req, Methods) ->
+    set_headers([{<<"allow">>, join_methods(Methods)}], Req).
+
+join_methods(Methods) ->
+    L = lists:foldr(fun(X, Acc) ->
+        [X, <<", ">>|Acc]
+    end, [], Methods),
+    list_to_binary(lists:droplast(L)).
 
 set_headers(Headers, Req) ->
     lists:foldl(fun({Name, Value}, R) ->

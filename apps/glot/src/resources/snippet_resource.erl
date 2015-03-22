@@ -3,6 +3,7 @@
     init/3,
     rest_init/2,
     allowed_methods/2,
+    options/2,
     content_types_accepted/2,
     content_types_provided/2,
     forbidden/2,
@@ -26,8 +27,16 @@ init(_Transport, _Req, _Opts) ->
 rest_init(Req, []) ->
     {ok, Req, #state{}}.
 
+methods() ->
+    [<<"OPTIONS">>, <<"GET">>, <<"PUT">>, <<"DELETE">>].
+
 allowed_methods(Req, State) ->
-    {[<<"GET">>, <<"PUT">>, <<"DELETE">>], Req, State}.
+    {methods(), Req, State}.
+
+options(Req, State) ->
+    Req2 = http_util:add_cors_headers(Req, methods()),
+    Req3 = http_util:add_allow_header(Req2, methods()),
+    {ok, Req3, State}.
 
 content_types_accepted(Req, State) ->
     Handlers = [
@@ -74,7 +83,8 @@ delete_resource(Req, State=#state{snippet=Snippet}) ->
     {true, Req, State}.
 
 get(Req, State=#state{snippet=Snippet}) ->
-    {prepare_response(Snippet), Req, State}.
+    Req2 = http_util:add_cors_headers(Req, methods()),
+    {prepare_response(Snippet), Req2, State}.
 
 accept_put(Req, State) ->
     http_util:decode_body(fun update_snippet/3, Req, State).
@@ -83,7 +93,8 @@ update_snippet(Data, Req, State=#state{id=Id, user_id=UserId, snippet=Snippet}) 
     Rev = proplists:get_value(<<"_rev">>, Snippet),
     NewSnippet = snippet:update(Id, Rev, normalize(UserId, Data)),
     Req2 = cowboy_req:set_resp_body(prepare_response(NewSnippet), Req),
-    {true, Req2, State}.
+    Req3 = http_util:add_cors_headers(Req2, methods()),
+    {true, Req3, State}.
 
 lookup_user_id(Req) ->
     case cowboy_req:parse_header(<<"authorization">>, Req) of
@@ -106,7 +117,9 @@ is_allowed(<<"PUT">>, UserId, Snippet) ->
 is_allowed(<<"DELETE">>, <<"anonymous">>, _) ->
     false;
 is_allowed(<<"DELETE">>, UserId, Snippet) ->
-    snippet:is_owner(Snippet, UserId).
+    snippet:is_owner(Snippet, UserId);
+is_allowed(<<"OPTIONS">>, _, _) ->
+    true.
 
 % TODO: Is duplicated
 prepare_response(Snippet) ->

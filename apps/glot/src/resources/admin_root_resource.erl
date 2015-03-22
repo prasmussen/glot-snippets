@@ -26,8 +26,7 @@ root(Req, State) ->
     BaseUrl = config:base_url(),
     Data = #{
         urls => #{
-            tokens => <<BaseUrl/binary, "/admin/tokens">>,
-            languages => <<BaseUrl/binary, "/admin/languages">>
+            users => <<BaseUrl/binary, "/admin/users">>
         }
     },
     {jsx:encode(Data), Req, State}.
