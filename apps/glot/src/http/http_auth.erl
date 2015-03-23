@@ -1,8 +1,7 @@
 -module(http_auth).
 
 -export([
-    authorize_admin/2,
-    authorize_user/2
+    authorize_admin/2
 ]).
 
 -define(WWW_AUTHENTICATE, <<"Token <token>">>).
@@ -11,9 +10,6 @@
 
 authorize_admin(Req, State) ->
     authorize(Req, State, fun admin_token:is_valid/1).
-
-authorize_user(Req, State) ->
-    authorize(Req, State, fun user_token:is_valid/1).
 
 authorize(Req, State, ValidateFn) ->
     case cowboy_req:parse_header(<<"authorization">>, Req) of
