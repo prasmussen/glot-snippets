@@ -43,7 +43,7 @@ accept_post(Req, State) ->
     http_util:decode_body(fun save/3, Req, State).
 
 save(Data, Req, State) ->
-    User = user:save(normalize(Data)),
+    User = users:save(normalize(Data)),
     Req2 = cowboy_req:set_resp_body(prepare_response(User), Req),
     {true, Req2, State}.
 
