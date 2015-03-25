@@ -8,6 +8,10 @@
     delete/2
 ]).
 
+identifier() ->
+    Uuid = uuid:uuid_to_string(uuid:get_v4()),
+    list_to_binary(Uuid).
+
 get_by_token(Token) ->
     case user_srv:get_by_token(Token) of
         [] -> {error, not_found};
@@ -35,6 +39,7 @@ delete(Id, Rev) ->
 prepare_save(Data) ->
     Now = iso8601:format(now()),
     [
+        {<<"_id">>, identifier()},
         {<<"created">>, Now},
         {<<"modified">>, Now}
         |Data
