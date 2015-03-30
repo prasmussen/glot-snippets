@@ -56,15 +56,18 @@ list_by_owner_map_func() ->
 list_public_map_func() ->
     <<
     "function(doc) {"
-    "  emit(doc.public, {"
-    "    id: doc._id,"
-    "    created: doc.created,"
-    "    modified: doc.modified,"
-    "    language: doc.language,"
-    "    title: doc.title,"
-    "    public: doc.public,"
-    "    owner: doc.owner,"
-    "  });"
+    "  if (doc.public) {"
+    "    var key = Date.parse(doc.created);"
+    "    emit(key, {"
+    "      id: doc._id,"
+    "      created: doc.created,"
+    "      modified: doc.modified,"
+    "      language: doc.language,"
+    "      title: doc.title,"
+    "      public: doc.public,"
+    "      owner: doc.owner,"
+    "    });"
+    "  }"
     "}"
     >>.
 
@@ -101,7 +104,7 @@ handle_call({list_by_owner, Owner}, _From, State=#state{db=Db}) ->
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
 handle_call({list_public}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public"}, [{key, true}]),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public"}, [descending]),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
 handle_call({get, Id}, _From, State=#state{db=Db}) ->
