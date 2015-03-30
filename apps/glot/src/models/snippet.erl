@@ -1,6 +1,7 @@
 -module(snippet).
 -export([
     list_by_owner/1,
+    list_public/0,
     get/1,
     save/1,
     update/3,
@@ -25,6 +26,9 @@ id_to_iso8601(Id) ->
 
 list_by_owner(Owner) ->
     snippet_srv:list_by_owner(Owner).
+
+list_public() ->
+    snippet_srv:list_public().
 
 get(Id) ->
     snippet_srv:get(Id).

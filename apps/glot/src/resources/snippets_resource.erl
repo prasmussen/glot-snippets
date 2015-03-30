@@ -62,7 +62,10 @@ allow_missing_post(Req, State) ->
 
 % TODO: Add pagination
 list(Req, State=#state{user_id=UserId}) ->
-    Snippets = snippet:list_by_owner(UserId),
+    Snippets = case UserId of
+        <<"anonymous">> -> snippet:list_public();
+        _ -> snippet:list_by_owner(UserId)
+    end,
     Req2 = http_util:add_cors_headers(Req, methods()),
     {prepare_list_response(Snippets), Req2, State}.
 

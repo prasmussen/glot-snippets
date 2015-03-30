@@ -11,6 +11,7 @@
     terminate/2,
 
     list_by_owner/1,
+    list_public/0,
     get/1,
     save/1,
     delete/1
@@ -52,6 +53,21 @@ list_by_owner_map_func() ->
     "}"
     >>.
 
+list_public_map_func() ->
+    <<
+    "function(doc) {"
+    "  emit(doc.public, {"
+    "    id: doc._id,"
+    "    created: doc.created,"
+    "    modified: doc.modified,"
+    "    language: doc.language,"
+    "    title: doc.title,"
+    "    public: doc.public,"
+    "    owner: doc.owner,"
+    "  });"
+    "}"
+    >>.
+
 design_doc() ->
     util:jsx_to_jiffy_terms([
         {<<"_id">>, <<"_design/snippets">>},
@@ -59,6 +75,9 @@ design_doc() ->
         {<<"views">>, [
             {<<"list_by_owner">>, [
                 {<<"map">>, list_by_owner_map_func()}
+            ]},
+            {<<"list_public">>, [
+                {<<"map">>, list_public_map_func()}
             ]}
         ]}
     ]).
@@ -79,6 +98,10 @@ stop() ->
 
 handle_call({list_by_owner, Owner}, _From, State=#state{db=Db}) ->
     {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner"}, [{key, Owner}]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    {reply, format_rows(Rows), State};
+handle_call({list_public}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public"}, [{key, true}]),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
 handle_call({get, Id}, _From, State=#state{db=Db}) ->
@@ -110,6 +133,9 @@ terminate(Reason, _State) ->
 
 list_by_owner(Owner) ->
     gen_server:call(?MODULE, {list_by_owner, Owner}).
+
+list_public() ->
+    gen_server:call(?MODULE, {list_public}).
 
 get(Id) ->
     gen_server:call(?MODULE, {get, Id}).
