@@ -63,11 +63,18 @@ allow_missing_post(Req, State) ->
 % TODO: Add pagination
 list(Req, State=#state{user_id=UserId}) ->
     Snippets = case UserId of
-        <<"anonymous">> -> snippet:list_public();
+        <<"anonymous">> ->
+            {Owner, _} = cowboy_req:qs_val(<<"owner">>, Req),
+            list_public(Owner);
         _ -> snippet:list_by_owner(UserId)
     end,
     Req2 = http_util:add_cors_headers(Req, methods()),
     {prepare_list_response(Snippets), Req2, State}.
+
+list_public(undefined) ->
+    snippet:list_public();
+list_public(Owner) ->
+    snippet:list_public_by_owner(Owner).
 
 accept_post(Req, State) ->
     http_util:decode_body(fun save_snippet/3, Req, State).

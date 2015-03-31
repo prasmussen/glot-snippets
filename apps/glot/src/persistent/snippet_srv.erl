@@ -12,6 +12,7 @@
 
     list_by_owner/1,
     list_public/0,
+    list_public_by_owner/1,
     get/1,
     save/1,
     delete/1
@@ -57,8 +58,24 @@ list_public_map_func() ->
     <<
     "function(doc) {"
     "  if (doc.public) {"
-    "    var key = Date.parse(doc.created);"
-    "    emit(key, {"
+    "    emit(doc._id, {"
+    "      id: doc._id,"
+    "      created: doc.created,"
+    "      modified: doc.modified,"
+    "      language: doc.language,"
+    "      title: doc.title,"
+    "      public: doc.public,"
+    "      owner: doc.owner,"
+    "    });"
+    "  }"
+    "}"
+    >>.
+
+list_public_by_owner_map_func() ->
+    <<
+    "function(doc) {"
+    "  if (doc.public) {"
+    "    emit(doc.owner, {"
     "      id: doc._id,"
     "      created: doc.created,"
     "      modified: doc.modified,"
@@ -81,6 +98,9 @@ design_doc() ->
             ]},
             {<<"list_public">>, [
                 {<<"map">>, list_public_map_func()}
+            ]},
+            {<<"list_public_by_owner">>, [
+                {<<"map">>, list_public_by_owner_map_func()}
             ]}
         ]}
     ]).
@@ -100,11 +120,15 @@ stop() ->
     gen_server:call(?MODULE, stop).
 
 handle_call({list_by_owner, Owner}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner"}, [{key, Owner}]),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner"}, [{key, Owner}, descending]),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
 handle_call({list_public}, _From, State=#state{db=Db}) ->
     {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public"}, [descending]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    {reply, format_rows(Rows), State};
+handle_call({list_public_by_owner, Owner}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_owner"}, [{key, Owner}, descending]),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
 handle_call({get, Id}, _From, State=#state{db=Db}) ->
@@ -139,6 +163,9 @@ list_by_owner(Owner) ->
 
 list_public() ->
     gen_server:call(?MODULE, {list_public}).
+
+list_public_by_owner(Owner) ->
+    gen_server:call(?MODULE, {list_public_by_owner, Owner}).
 
 get(Id) ->
     gen_server:call(?MODULE, {get, Id}).

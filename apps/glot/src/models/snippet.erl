@@ -2,6 +2,7 @@
 -export([
     list_by_owner/1,
     list_public/0,
+    list_public_by_owner/1,
     get/1,
     save/1,
     update/3,
@@ -29,6 +30,9 @@ list_by_owner(Owner) ->
 
 list_public() ->
     snippet_srv:list_public().
+
+list_public_by_owner(Owner) ->
+    snippet_srv:list_public_by_owner(Owner).
 
 get(Id) ->
     snippet_srv:get(Id).
