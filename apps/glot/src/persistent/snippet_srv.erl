@@ -50,6 +50,7 @@ list_by_owner_map_func() ->
     "    title: doc.title,"
     "    public: doc.public,"
     "    owner: doc.owner,"
+    "    files_hash: doc.files_hash,"
     "  });"
     "}"
     >>.
@@ -66,6 +67,7 @@ list_public_map_func() ->
     "      title: doc.title,"
     "      public: doc.public,"
     "      owner: doc.owner,"
+    "      files_hash: doc.files_hash,"
     "    });"
     "  }"
     "}"
@@ -83,6 +85,7 @@ list_public_by_owner_map_func() ->
     "      title: doc.title,"
     "      public: doc.public,"
     "      owner: doc.owner,"
+    "      files_hash: doc.files_hash,"
     "    });"
     "  }"
     "}"

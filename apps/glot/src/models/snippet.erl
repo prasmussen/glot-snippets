@@ -48,12 +48,17 @@ update(Id, Rev, Snippet) ->
 delete(Snippet) ->
     snippet_srv:delete(Snippet).
 
+hash_files(Snippet) ->
+    Files = proplists:get_value(<<"files">>, Snippet),
+    util:sha1(jsx:encode(Files)).
+
 prepare_save(Data) ->
     Id = identifier(),
     [
         {<<"_id">>, Id},
         {<<"created">>, id_to_iso8601(Id)},
-        {<<"modified">>, id_to_iso8601(Id)}
+        {<<"modified">>, id_to_iso8601(Id)},
+        {<<"files_hash">>, hash_files(Data)}
         |Data
     ].
 
@@ -63,6 +68,7 @@ prepare_update(Id, Rev, Data) ->
         {<<"_id">>, Id},
         {<<"_rev">>, Rev},
         {<<"created">>, id_to_iso8601(Id)},
-        {<<"modified">>, Now}
+        {<<"modified">>, Now},
+        {<<"files_hash">>, hash_files(Data)}
         |Data
     ].
