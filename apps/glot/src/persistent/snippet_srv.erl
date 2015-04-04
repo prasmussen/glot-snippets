@@ -10,9 +10,10 @@
     code_change/3,
     terminate/2,
 
-    list_by_owner/1,
-    list_public/0,
-    list_public_by_owner/1,
+    list_by_owner/2,
+    list_public/1,
+    list_public_by_owner/2,
+
     get/1,
     save/1,
     delete/1
@@ -122,16 +123,22 @@ init([]) ->
 stop() ->
     gen_server:call(?MODULE, stop).
 
-handle_call({list_by_owner, Owner}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner"}, [{key, Owner}, descending]),
+handle_call({list_by_owner, Owner, {Limit, Skip}}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner"}, [
+        {key, Owner}, {limit, Limit}, {skip, Skip}, descending
+    ]),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
-handle_call({list_public}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public"}, [descending]),
+handle_call({list_public, {Limit, Skip}}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public"}, [
+        {limit, Limit}, {skip, Skip}, descending
+    ]),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
-handle_call({list_public_by_owner, Owner}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_owner"}, [{key, Owner}, descending]),
+handle_call({list_public_by_owner, Owner, {Limit, Skip}}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_owner"}, [
+        {key, Owner}, {limit, Limit}, {skip, Skip}, descending
+    ]),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
 handle_call({get, Id}, _From, State=#state{db=Db}) ->
@@ -161,14 +168,15 @@ code_change(_OldVsc, State, _Extra) ->
 terminate(Reason, _State) ->
     Reason.
 
-list_by_owner(Owner) ->
-    gen_server:call(?MODULE, {list_by_owner, Owner}).
+list_by_owner(Owner, Pagination) ->
+    gen_server:call(?MODULE, {list_by_owner, Owner, Pagination}).
 
-list_public() ->
-    gen_server:call(?MODULE, {list_public}).
+list_public(Pagination) ->
+    gen_server:call(?MODULE, {list_public, Pagination}).
 
-list_public_by_owner(Owner) ->
-    gen_server:call(?MODULE, {list_public_by_owner, Owner}).
+list_public_by_owner(Owner, Pagination) ->
+    gen_server:call(?MODULE, {list_public_by_owner, Owner, Pagination}).
+
 
 get(Id) ->
     gen_server:call(?MODULE, {get, Id}).

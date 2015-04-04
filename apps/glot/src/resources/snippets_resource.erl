@@ -3,6 +3,7 @@
     init/3,
     rest_init/2,
     allowed_methods/2,
+    malformed_request/2,
     options/2,
     content_types_accepted/2,
     content_types_provided/2,
@@ -13,9 +14,13 @@
 ]).
 
 -define(WRONG_TOKEN, <<"Wrong auth token">>).
+-define(MAX_PER_PAGE, 100).
+-define(WRONG_PAGE, <<"page must be >= 1">>).
+-define(WRONG_MAX_PER_PAGE, <<"per_page must be >= 1 and <= 100">>).
 
 -record(state, {
-    user_id
+    user_id,
+    pagination
 }).
 
 init(_Transport, _Req, _Opts) ->
@@ -29,6 +34,20 @@ methods() ->
 
 allowed_methods(Req, State) ->
     {methods(), Req, State}.
+
+malformed_request(Req, State) ->
+    {PageNo, _} = cowboy_req:qs_val(<<"page">>, Req, <<"1">>),
+    {PerPage, _} = cowboy_req:qs_val(<<"per_page">>, Req, integer_to_binary(?MAX_PER_PAGE)),
+    case {binary_to_integer(PageNo), binary_to_integer(PerPage)} of
+        {N, _} when (N < 1) ->
+            Req2 = http_util:set_response_msg(?WRONG_PAGE, Req),
+            {true, Req2, State};
+        {_, N} when (N < 1 orelse N > ?MAX_PER_PAGE) ->
+            Req2 = http_util:set_response_msg(?WRONG_MAX_PER_PAGE, Req),
+            {true, Req2, State};
+        Pagination ->
+            {false, Req, State#state{pagination=Pagination}}
+    end.
 
 options(Req, State) ->
     Req2 = http_util:add_cors_headers(Req, methods()),
@@ -50,7 +69,7 @@ content_types_provided(Req, State) ->
 resource_exists(Req, State) ->
     case lookup_user_id(Req) of
         {ok, UserId} ->
-            {true, Req, #state{user_id=UserId}};
+            {true, Req, State#state{user_id=UserId}};
         {error, not_found} ->
             Data = jsx:encode(#{message => ?WRONG_TOKEN}),
             Req2 = cowboy_req:set_resp_body(Data, Req),
@@ -60,21 +79,21 @@ resource_exists(Req, State) ->
 allow_missing_post(Req, State) ->
     {false, Req, State}.
 
-% TODO: Add pagination
-list(Req, State=#state{user_id=UserId}) ->
+list(Req, State=#state{user_id=UserId, pagination=Pagination}) ->
     Snippets = case UserId of
         <<"anonymous">> ->
             {Owner, _} = cowboy_req:qs_val(<<"owner">>, Req),
-            list_public(Owner);
-        _ -> snippet:list_by_owner(UserId)
+            list_public(Owner, Pagination);
+        _ ->
+            snippet:list_by_owner(UserId, Pagination)
     end,
     Req2 = http_util:add_cors_headers(Req, methods()),
     {prepare_list_response(Snippets), Req2, State}.
 
-list_public(undefined) ->
-    snippet:list_public();
-list_public(Owner) ->
-    snippet:list_public_by_owner(Owner).
+list_public(undefined, Pagination) ->
+    snippet:list_public(Pagination);
+list_public(Owner, Pagination) ->
+    snippet:list_public_by_owner(Owner, Pagination).
 
 accept_post(Req, State) ->
     http_util:decode_body(fun save_snippet/3, Req, State).

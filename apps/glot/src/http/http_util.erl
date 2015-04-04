@@ -2,6 +2,7 @@
 
 -export([
     decode_body/3,
+    set_response_msg/2,
     add_cors_headers/2,
     add_allow_header/2,
     log_request/1,
@@ -91,3 +92,7 @@ set_headers(Headers, Req) ->
     lists:foldl(fun({Name, Value}, R) ->
         cowboy_req:set_resp_header(Name, Value, R)
     end, Req, Headers).
+
+set_response_msg(Msg, Req) ->
+    Data = jsx:encode(#{message => Msg}),
+    cowboy_req:set_resp_body(Data, Req).

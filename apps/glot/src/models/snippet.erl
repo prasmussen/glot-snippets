@@ -1,8 +1,8 @@
 -module(snippet).
 -export([
-    list_by_owner/1,
-    list_public/0,
-    list_public_by_owner/1,
+    list_by_owner/2,
+    list_public/1,
+    list_public_by_owner/2,
     get/1,
     save/1,
     update/3,
@@ -25,14 +25,17 @@ id_to_iso8601(Id) ->
     Ts = util:microseconds_to_timestamp(util:base36_to_10(binary_to_list(Id))),
     iso8601:format(Ts).
 
-list_by_owner(Owner) ->
-    snippet_srv:list_by_owner(Owner).
+list_by_owner(Owner, Pagination) ->
+    DbPagination = to_db_pagination(Pagination),
+    snippet_srv:list_by_owner(Owner, DbPagination).
 
-list_public() ->
-    snippet_srv:list_public().
+list_public(Pagination) ->
+    DbPagination = to_db_pagination(Pagination),
+    snippet_srv:list_public(DbPagination).
 
-list_public_by_owner(Owner) ->
-    snippet_srv:list_public_by_owner(Owner).
+list_public_by_owner(Owner, Pagination) ->
+    DbPagination = to_db_pagination(Pagination),
+    snippet_srv:list_public_by_owner(Owner, DbPagination).
 
 get(Id) ->
     snippet_srv:get(Id).
@@ -47,6 +50,9 @@ update(Id, Rev, Snippet) ->
 
 delete(Snippet) ->
     snippet_srv:delete(Snippet).
+
+to_db_pagination({PageNo, PerPage}) ->
+    {PerPage, (PageNo - 1) * PerPage}.
 
 hash_files(Snippet) ->
     Files = proplists:get_value(<<"files">>, Snippet),
