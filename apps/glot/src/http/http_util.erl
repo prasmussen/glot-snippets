@@ -5,6 +5,7 @@
     set_response_msg/2,
     add_cors_headers/2,
     add_allow_header/2,
+    add_link_pagination_header/5,
     log_request/1,
     log_response/4
 ]).
@@ -96,3 +97,53 @@ set_headers(Headers, Req) ->
 set_response_msg(Msg, Req) ->
     Data = jsx:encode(#{message => Msg}),
     cowboy_req:set_resp_body(Data, Req).
+
+proplist_to_qs([]) ->
+    <<>>;
+proplist_to_qs(QsList) ->
+    S = lists:foldr(fun({Key, Value}, Acc) ->
+        [<<Key/binary, $=, Value/binary>>|Acc]
+    end, [], QsList),
+    util:join(S, $&).
+
+add_link_pagination_header(Req, _, PageNo, PageCount, _) when PageNo > PageCount ->
+    Req;
+add_link_pagination_header(Req, BaseUrl, PageNo, PageCount, QsList) ->
+    Value = link_pagination_header_value(BaseUrl, PageNo, PageCount, QsList),
+    set_headers([{<<"link">>, Value}], Req).
+
+link_pagination_header_value(BaseUrl, PageNo, PageCount, QsList) ->
+    QsTail = proplists:delete(<<"page">>, QsList),
+    HeaderVals = link_header_vals(BaseUrl, PageNo, PageCount, QsTail),
+    util:join(HeaderVals, <<", ">>).
+
+link_header_vals(BaseUrl, 1, 1, QsList) ->
+    link_last_vals(BaseUrl, 1, QsList);
+link_header_vals(BaseUrl, 1, PageCount, QsList) ->
+    link_next_last_vals(BaseUrl, 1, PageCount, QsList);
+link_header_vals(BaseUrl, PageNo, PageCount, QsList) when PageNo == PageCount ->
+    link_prev_first_vals(BaseUrl, PageNo, QsList);
+link_header_vals(BaseUrl, PageNo, PageCount, QsList) ->
+    NextLast = link_next_last_vals(BaseUrl, PageNo, PageCount, QsList),
+    PrevFirst = link_prev_first_vals(BaseUrl, PageNo, QsList),
+    NextLast ++ PrevFirst.
+
+link_last_vals(BaseUrl, PageCount, QsList) ->
+    [build_link_header(BaseUrl, PageCount, "last", QsList)].
+
+link_next_last_vals(BaseUrl, PageNo, PageCount, QsList) ->
+    [
+        build_link_header(BaseUrl, PageNo + 1, "next", QsList)|
+        link_last_vals(BaseUrl, PageCount, QsList)
+    ].
+
+link_prev_first_vals(BaseUrl, PageNo, QsList) ->
+    [
+        build_link_header(BaseUrl, PageNo - 1, "prev", QsList),
+        build_link_header(BaseUrl, 1, "first", QsList)
+    ].
+
+build_link_header(BaseUrl, PageNo, Rel, QsList) ->
+    Page = integer_to_binary(PageNo),
+    Qs = [$?|proplist_to_qs([{<<"page">>, Page}|QsList])],
+    [$<, BaseUrl, Qs, $>, "; rel=", $", Rel, $"].

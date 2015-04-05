@@ -3,6 +3,11 @@
     list_by_owner/2,
     list_public/1,
     list_public_by_owner/2,
+
+    count_by_owner/1,
+    count_public/0,
+    count_public_by_owner/1,
+
     get/1,
     save/1,
     update/3,
@@ -36,6 +41,15 @@ list_public(Pagination) ->
 list_public_by_owner(Owner, Pagination) ->
     DbPagination = to_db_pagination(Pagination),
     snippet_srv:list_public_by_owner(Owner, DbPagination).
+
+count_by_owner(Owner) ->
+    snippet_srv:count_by_owner(Owner).
+
+count_public() ->
+    snippet_srv:count_public().
+
+count_public_by_owner(Owner) ->
+    snippet_srv:count_public_by_owner(Owner).
 
 get(Id) ->
     snippet_srv:get(Id).

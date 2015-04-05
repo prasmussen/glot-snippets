@@ -79,21 +79,35 @@ resource_exists(Req, State) ->
 allow_missing_post(Req, State) ->
     {false, Req, State}.
 
-list(Req, State=#state{user_id=UserId, pagination=Pagination}) ->
-    Snippets = case UserId of
+list(Req, State=#state{user_id=UserId, pagination={PageNo, PerPage}}) ->
+    {Snippets, TotalCount} = case UserId of
         <<"anonymous">> ->
             {Owner, _} = cowboy_req:qs_val(<<"owner">>, Req),
-            list_public(Owner, Pagination);
+            list_public(Owner, {PageNo, PerPage});
         _ ->
-            snippet:list_by_owner(UserId, Pagination)
+            list_non_public(UserId, {PageNo, PerPage})
     end,
     Req2 = http_util:add_cors_headers(Req, methods()),
-    {prepare_list_response(Snippets), Req2, State}.
+    {QsList, _} = cowboy_req:qs_vals(Req),
+    PageCount = trunc(util:ceil(TotalCount / PerPage)),
+    Req3 = http_util:add_link_pagination_header(
+        Req2, snippets_base_url(), PageNo, PageCount, QsList
+    ),
+    {prepare_list_response(Snippets), Req3, State}.
 
 list_public(undefined, Pagination) ->
-    snippet:list_public(Pagination);
+    {snippet:list_public(Pagination), snippet:count_public()};
 list_public(Owner, Pagination) ->
-    snippet:list_public_by_owner(Owner, Pagination).
+    {
+        snippet:list_public_by_owner(Owner, Pagination),
+        snippet:count_public_by_owner(Owner)
+    }.
+
+list_non_public(Owner, Pagination) ->
+    {
+        snippet:list_by_owner(Owner, Pagination),
+        snippet:count_by_owner(Owner)
+    }.
 
 accept_post(Req, State) ->
     http_util:decode_body(fun save_snippet/3, Req, State).
@@ -159,3 +173,7 @@ prepare_response(Snippet) ->
 get_url(Id) ->
     BaseUrl = config:base_url(),
     <<BaseUrl/binary, "/snippets/", Id/binary>>.
+
+snippets_base_url() ->
+    BaseUrl = config:base_url(),
+    <<BaseUrl/binary, "/snippets">>.

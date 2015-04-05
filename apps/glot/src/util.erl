@@ -2,6 +2,8 @@
 
 -export([
     sha1/1,
+    ceil/1,
+    join/2,
     pid_to_binary/1,
     microseconds_since_epoch/0,
     microseconds_to_timestamp/1,
@@ -73,3 +75,13 @@ jsx_to_jiffy_terms(List) when is_list(List) ->
     [ jsx_to_jiffy_terms(Term) || Term <- List];
 jsx_to_jiffy_terms(Term) ->
     Term.
+
+ceil(X) when X < 0 -> trunc(X);
+ceil(X) when X > trunc(X) -> trunc(X) + 1;
+ceil(X) -> X.
+
+join(Parts, Sep) ->
+    L = lists:foldr(fun(X, Acc) ->
+        [X, Sep|Acc]
+    end, [], Parts),
+    iolist_to_binary(lists:droplast(L)).

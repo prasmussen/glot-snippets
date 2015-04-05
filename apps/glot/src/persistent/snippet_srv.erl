@@ -14,6 +14,10 @@
     list_public/1,
     list_public_by_owner/2,
 
+    count_by_owner/1,
+    count_public/0,
+    count_public_by_owner/1,
+
     get/1,
     save/1,
     delete/1
@@ -56,6 +60,13 @@ list_by_owner_map_func() ->
     "}"
     >>.
 
+count_by_owner_map_func() ->
+    <<
+    "function(doc) {"
+    "  emit(doc.owner, 1);"
+    "}"
+    >>.
+
 list_public_map_func() ->
     <<
     "function(doc) {"
@@ -70,6 +81,15 @@ list_public_map_func() ->
     "      owner: doc.owner,"
     "      files_hash: doc.files_hash,"
     "    });"
+    "  }"
+    "}"
+    >>.
+
+count_public_map_func() ->
+    <<
+    "function(doc) {"
+    "  if (doc.public) {"
+    "    emit(null, 1);"
     "  }"
     "}"
     >>.
@@ -92,6 +112,15 @@ list_public_by_owner_map_func() ->
     "}"
     >>.
 
+count_public_by_owner_map_func() ->
+    <<
+    "function(doc) {"
+    "  if (doc.public) {"
+    "    emit(doc.owner, 1);"
+    "  }"
+    "}"
+    >>.
+
 design_doc() ->
     util:jsx_to_jiffy_terms([
         {<<"_id">>, <<"_design/snippets">>},
@@ -100,11 +129,23 @@ design_doc() ->
             {<<"list_by_owner">>, [
                 {<<"map">>, list_by_owner_map_func()}
             ]},
+            {<<"count_by_owner">>, [
+                {<<"map">>, count_by_owner_map_func()},
+                {<<"reduce">>, <<"_count">>}
+            ]},
             {<<"list_public">>, [
                 {<<"map">>, list_public_map_func()}
             ]},
+            {<<"count_public">>, [
+                {<<"map">>, count_public_map_func()},
+                {<<"reduce">>, <<"_count">>}
+            ]},
             {<<"list_public_by_owner">>, [
                 {<<"map">>, list_public_by_owner_map_func()}
+            ]},
+            {<<"count_public_by_owner">>, [
+                {<<"map">>, count_public_by_owner_map_func()},
+                {<<"reduce">>, <<"_count">>}
             ]}
         ]}
     ]).
@@ -141,6 +182,18 @@ handle_call({list_public_by_owner, Owner, {Limit, Skip}}, _From, State=#state{db
     ]),
     Rows = util:jiffy_to_jsx_terms(Data),
     {reply, format_rows(Rows), State};
+handle_call({count_by_owner, Owner}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_by_owner"}, [{key, Owner}, group]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    {reply, format_count(format_rows(Rows)), State};
+handle_call({count_public}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public"}, []),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    {reply, format_count(format_rows(Rows)), State};
+handle_call({count_public_by_owner, Owner}, _From, State=#state{db=Db}) ->
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public_by_owner"}, [{key, Owner}, group]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    {reply, format_count(format_rows(Rows)), State};
 handle_call({get, Id}, _From, State=#state{db=Db}) ->
     Res = case couchbeam:open_doc(Db, Id) of
         {ok, Data} -> {ok, util:jiffy_to_jsx_terms(Data)};
@@ -177,6 +230,14 @@ list_public(Pagination) ->
 list_public_by_owner(Owner, Pagination) ->
     gen_server:call(?MODULE, {list_public_by_owner, Owner, Pagination}).
 
+count_by_owner(Owner) ->
+    gen_server:call(?MODULE, {count_by_owner, Owner}).
+
+count_public() ->
+    gen_server:call(?MODULE, {count_public}).
+
+count_public_by_owner(Owner) ->
+    gen_server:call(?MODULE, {count_public_by_owner, Owner}).
 
 get(Id) ->
     gen_server:call(?MODULE, {get, Id}).
@@ -189,3 +250,6 @@ delete(Snippet) ->
 
 format_rows(Rows) ->
     [proplists:get_value(<<"value">>, X) || X <- Rows].
+
+format_count([]) -> 0;
+format_count([N]) -> N.
