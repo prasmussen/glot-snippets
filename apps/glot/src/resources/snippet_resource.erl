@@ -108,8 +108,8 @@ get_user_id(Token) ->
         Error -> Error
     end.
 
-is_allowed(<<"GET">>, UserId, Snippet) ->
-    snippet:is_owner(Snippet, UserId) orelse snippet:is_public(Snippet);
+is_allowed(<<"GET">>, _, _) ->
+    true;
 is_allowed(<<"PUT">>, <<"anonymous">>, _) ->
     false;
 is_allowed(<<"PUT">>, UserId, Snippet) ->
