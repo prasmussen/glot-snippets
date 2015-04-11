@@ -60,13 +60,6 @@ list_by_owner_map_func() ->
     "}"
     >>.
 
-count_by_owner_map_func() ->
-    <<
-    "function(doc) {"
-    "  emit(doc.owner, 1);"
-    "}"
-    >>.
-
 list_public_map_func() ->
     <<
     "function(doc) {"
@@ -81,15 +74,6 @@ list_public_map_func() ->
     "      owner: doc.owner,"
     "      files_hash: doc.files_hash,"
     "    });"
-    "  }"
-    "}"
-    >>.
-
-count_public_map_func() ->
-    <<
-    "function(doc) {"
-    "  if (doc.public) {"
-    "    emit(null, 1);"
     "  }"
     "}"
     >>.
@@ -112,6 +96,22 @@ list_public_by_owner_map_func() ->
     "}"
     >>.
 
+count_by_owner_map_func() ->
+    <<
+    "function(doc) {"
+    "  emit(doc.owner, 1);"
+    "}"
+    >>.
+
+count_public_map_func() ->
+    <<
+    "function(doc) {"
+    "  if (doc.public) {"
+    "    emit(null, 1);"
+    "  }"
+    "}"
+    >>.
+
 count_public_by_owner_map_func() ->
     <<
     "function(doc) {"
@@ -129,19 +129,19 @@ design_doc() ->
             {<<"list_by_owner">>, [
                 {<<"map">>, list_by_owner_map_func()}
             ]},
+            {<<"list_public">>, [
+                {<<"map">>, list_public_map_func()}
+            ]},
+            {<<"list_public_by_owner">>, [
+                {<<"map">>, list_public_by_owner_map_func()}
+            ]},
             {<<"count_by_owner">>, [
                 {<<"map">>, count_by_owner_map_func()},
                 {<<"reduce">>, <<"_count">>}
             ]},
-            {<<"list_public">>, [
-                {<<"map">>, list_public_map_func()}
-            ]},
             {<<"count_public">>, [
                 {<<"map">>, count_public_map_func()},
                 {<<"reduce">>, <<"_count">>}
-            ]},
-            {<<"list_public_by_owner">>, [
-                {<<"map">>, list_public_by_owner_map_func()}
             ]},
             {<<"count_public_by_owner">>, [
                 {<<"map">>, count_public_by_owner_map_func()},
