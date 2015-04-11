@@ -3,12 +3,14 @@
     list_by_owner/2,
     list_by_owner_by_language/3,
     list_public/1,
+    list_public_by_language/2,
     list_public_by_owner/2,
     list_public_by_owner_by_language/3,
 
     count_by_owner/1,
     count_by_owner_by_language/2,
     count_public/0,
+    count_public_by_language/1,
     count_public_by_owner/1,
     count_public_by_owner_by_language/2,
 
@@ -46,6 +48,10 @@ list_public(Pagination) ->
     DbPagination = to_db_pagination(Pagination),
     snippet_srv:list_public(DbPagination).
 
+list_public_by_language(Language, Pagination) ->
+    DbPagination = to_db_pagination(Pagination),
+    snippet_srv:list_public_by_language(Language, DbPagination).
+
 list_public_by_owner(Owner, Pagination) ->
     DbPagination = to_db_pagination(Pagination),
     snippet_srv:list_public_by_owner(Owner, DbPagination).
@@ -62,6 +68,9 @@ count_by_owner_by_language(Owner, Language) ->
 
 count_public() ->
     snippet_srv:count_public().
+
+count_public_by_language(Language) ->
+    snippet_srv:count_public_by_language(Language).
 
 count_public_by_owner(Owner) ->
     snippet_srv:count_public_by_owner(Owner).

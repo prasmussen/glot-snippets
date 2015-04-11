@@ -98,6 +98,11 @@ list(Req, State=#state{user_id=UserId, pagination={PageNo, PerPage}}) ->
 
 list_public(all_owners, all_languages, Pagination) ->
     {snippet:list_public(Pagination), snippet:count_public()};
+list_public(all_owners, Language, Pagination) ->
+    {
+        snippet:list_public_by_language(Language, Pagination),
+        snippet:count_public_by_language(Language)
+    };
 list_public(Owner, all_languages, Pagination) ->
     {
         snippet:list_public_by_owner(Owner, Pagination),
