@@ -28,8 +28,8 @@ save(User) ->
     Doc = prepare_save(User),
     user_srv:save(Doc).
 
-update(Id, Rev, User) ->
-    Doc = prepare_update(Id, Rev, User),
+update(Id, OldUser, User) ->
+    Doc = prepare_update(Id, OldUser, User),
     user_srv:save(Doc).
 
 delete(Id, Rev) ->
@@ -45,11 +45,12 @@ prepare_save(Data) ->
         |Data
     ].
 
-prepare_update(Id, Rev, Data) ->
+prepare_update(Id, OldUser, Data) ->
     Now = iso8601:format(now()),
     [
         {<<"_id">>, Id},
-        {<<"_rev">>, Rev},
+        {<<"_rev">>, proplists:get_value(<<"_rev">>, OldUser)},
+        {<<"created">>, proplists:get_value(<<"created">>, OldUser)},
         {<<"modified">>, Now}
         |Data
     ].

@@ -57,8 +57,7 @@ accept_put(Req, State) ->
     http_util:decode_body(fun update_user/3, Req, State).
 
 update_user(Data, Req, State=#state{id=Id, user=User}) ->
-    Rev = proplists:get_value(<<"_rev">>, User),
-    NewUser = users:update(Id, Rev, normalize(Data)),
+    NewUser = users:update(Id, User, normalize(Data)),
     Req2 = cowboy_req:set_resp_body(prepare_response(NewUser), Req),
     {true, Req2, State}.
 
