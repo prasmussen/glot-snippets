@@ -98,8 +98,6 @@ set_response_msg(Msg, Req) ->
     Data = jsx:encode(#{message => Msg}),
     cowboy_req:set_resp_body(Data, Req).
 
-proplist_to_qs([]) ->
-    <<>>;
 proplist_to_qs(QsList) ->
     S = lists:foldr(fun({Key, Value}, Acc) ->
         [<<Key/binary, $=, Value/binary>>|Acc]
@@ -145,5 +143,5 @@ link_prev_first_vals(BaseUrl, PageNo, QsList) ->
 
 build_link_header(BaseUrl, PageNo, Rel, QsList) ->
     Page = integer_to_binary(PageNo),
-    Qs = [$?|proplist_to_qs([{<<"page">>, Page}|QsList])],
+    Qs = [$?, proplist_to_qs([{<<"page">>, Page}|QsList])],
     [$<, BaseUrl, Qs, $>, "; rel=", $", Rel, $"].
