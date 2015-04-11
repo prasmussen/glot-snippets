@@ -84,7 +84,7 @@ list(Req, State=#state{user_id=UserId, pagination={PageNo, PerPage}}) ->
     {Snippets, TotalCount} = case UserId of
         <<"anonymous">> ->
             {Owner, _} = cowboy_req:qs_val(<<"owner">>, Req, all_owners),
-            list_public(Owner, {PageNo, PerPage});
+            list_public(Owner, Language, {PageNo, PerPage});
         _ ->
             list_non_public(UserId, Language, {PageNo, PerPage})
     end,
@@ -96,12 +96,17 @@ list(Req, State=#state{user_id=UserId, pagination={PageNo, PerPage}}) ->
     ),
     {prepare_list_response(Snippets), Req3, State}.
 
-list_public(all_owners, Pagination) ->
+list_public(all_owners, all_languages, Pagination) ->
     {snippet:list_public(Pagination), snippet:count_public()};
-list_public(Owner, Pagination) ->
+list_public(Owner, all_languages, Pagination) ->
     {
         snippet:list_public_by_owner(Owner, Pagination),
         snippet:count_public_by_owner(Owner)
+    };
+list_public(Owner, Language, Pagination) ->
+    {
+        snippet:list_public_by_owner_by_language(Owner, Language, Pagination),
+        snippet:count_public_by_owner_by_language(Owner, Language)
     }.
 
 list_non_public(Owner, all_languages, Pagination) ->
