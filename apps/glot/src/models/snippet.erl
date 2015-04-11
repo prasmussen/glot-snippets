@@ -1,10 +1,12 @@
 -module(snippet).
 -export([
     list_by_owner/2,
+    list_by_owner_by_language/3,
     list_public/1,
     list_public_by_owner/2,
 
     count_by_owner/1,
+    count_by_owner_by_language/2,
     count_public/0,
     count_public_by_owner/1,
 
@@ -34,6 +36,10 @@ list_by_owner(Owner, Pagination) ->
     DbPagination = to_db_pagination(Pagination),
     snippet_srv:list_by_owner(Owner, DbPagination).
 
+list_by_owner_by_language(Owner, Language, Pagination) ->
+    DbPagination = to_db_pagination(Pagination),
+    snippet_srv:list_by_owner_by_language(Owner, Language, DbPagination).
+
 list_public(Pagination) ->
     DbPagination = to_db_pagination(Pagination),
     snippet_srv:list_public(DbPagination).
@@ -44,6 +50,9 @@ list_public_by_owner(Owner, Pagination) ->
 
 count_by_owner(Owner) ->
     snippet_srv:count_by_owner(Owner).
+
+count_by_owner_by_language(Owner, Language) ->
+    snippet_srv:count_by_owner_by_language(Owner, Language).
 
 count_public() ->
     snippet_srv:count_public().

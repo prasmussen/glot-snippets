@@ -80,12 +80,13 @@ allow_missing_post(Req, State) ->
     {false, Req, State}.
 
 list(Req, State=#state{user_id=UserId, pagination={PageNo, PerPage}}) ->
+    {Language, _} = cowboy_req:qs_val(<<"language">>, Req, all_languages),
     {Snippets, TotalCount} = case UserId of
         <<"anonymous">> ->
-            {Owner, _} = cowboy_req:qs_val(<<"owner">>, Req),
+            {Owner, _} = cowboy_req:qs_val(<<"owner">>, Req, all_owners),
             list_public(Owner, {PageNo, PerPage});
         _ ->
-            list_non_public(UserId, {PageNo, PerPage})
+            list_non_public(UserId, Language, {PageNo, PerPage})
     end,
     Req2 = http_util:add_cors_headers(Req, methods()),
     {QsList, _} = cowboy_req:qs_vals(Req),
@@ -95,7 +96,7 @@ list(Req, State=#state{user_id=UserId, pagination={PageNo, PerPage}}) ->
     ),
     {prepare_list_response(Snippets), Req3, State}.
 
-list_public(undefined, Pagination) ->
+list_public(all_owners, Pagination) ->
     {snippet:list_public(Pagination), snippet:count_public()};
 list_public(Owner, Pagination) ->
     {
@@ -103,10 +104,15 @@ list_public(Owner, Pagination) ->
         snippet:count_public_by_owner(Owner)
     }.
 
-list_non_public(Owner, Pagination) ->
+list_non_public(Owner, all_languages, Pagination) ->
     {
         snippet:list_by_owner(Owner, Pagination),
         snippet:count_by_owner(Owner)
+    };
+list_non_public(Owner, Language, Pagination) ->
+    {
+        snippet:list_by_owner_by_language(Owner, Language, Pagination),
+        snippet:count_by_owner_by_language(Owner, Language)
     }.
 
 accept_post(Req, State) ->
