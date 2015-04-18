@@ -33,11 +33,6 @@ http_listen_ip() ->
 http_listen_port() ->
     list_to_integer(os:getenv("API_HTTP_LISTEN_PORT")).
 
-%data_path() ->
-%    Path = os:getenv("DATA_PATH"),
-%    filelib:ensure_dir(Path),
-%    Path.
-
 log_path() ->
     Path = os:getenv("LOG_PATH"),
     filelib:ensure_dir(Path),
