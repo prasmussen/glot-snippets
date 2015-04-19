@@ -14,7 +14,8 @@
     jsx,
     hackney,
     couchbeam,
-    iso8601
+    iso8601,
+    uuid
   ]},
   {mod, { glot_app, []}},
   {env, []}
