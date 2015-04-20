@@ -42,7 +42,9 @@ applications() ->
         idna,
         hackney,
         couchbeam,
-        iso8601
+        iso8601,
+        quickrand,
+        uuid
     ].
 
 priv_dir() ->
