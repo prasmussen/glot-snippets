@@ -4,7 +4,7 @@
     curl --request GET \
          --url 'https://snippets.glot.io/snippets/e2tx9nh4fh'
 
-### Example response
+### Example response data
     {
       "id": "e2tx9nh4fh",
       "url": "https://snippets.glot.io/snippets/e2tx9nh4fh",

@@ -41,7 +41,7 @@
          --url 'https://snippets.glot.io/snippets?language=erlang'
 
 
-### Example response
+### Example response data
     [
       {
         "url": "https://snippets.glot.io/snippets/e2txam1f3x",

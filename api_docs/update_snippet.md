@@ -21,7 +21,7 @@
       ]
     }
 
-### Example response
+### Example response data
     {
       "id": "e374yxuw49",
       "url": "https://snippets.glot.io/snippets/e374yxuw49",
