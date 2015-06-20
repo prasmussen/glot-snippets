@@ -30,7 +30,6 @@
 ]).
 
 -record(state, {
-    server,
     db    
 }).
 
@@ -263,89 +262,13 @@ init([]) ->
         {basic_auth, {config:db_user(), config:db_password()}}
     ]),
     Db = setup(Server),
-    {ok, #state{server=Server, db=Db}}.
+    {ok, #state{db=Db}}.
 
 stop() ->
     gen_server:call(?MODULE, stop).
 
-handle_call({list_by_owner, Owner, {Limit, Skip}}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner"}, [
-        {key, Owner}, {limit, Limit}, {skip, Skip}, descending
-    ]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_rows(Rows), State};
-handle_call({list_by_owner_by_language, Owner, Language, {Limit, Skip}}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner_by_language"}, [
-        {key, [Owner, Language]}, {limit, Limit}, {skip, Skip}, descending
-    ]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_rows(Rows), State};
-handle_call({list_public, {Limit, Skip}}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public"}, [
-        {limit, Limit}, {skip, Skip}, descending
-    ]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_rows(Rows), State};
-handle_call({list_public_by_language, Language, {Limit, Skip}}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_language"}, [
-        {key, Language}, {limit, Limit}, {skip, Skip}, descending
-    ]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_rows(Rows), State};
-handle_call({list_public_by_owner, Owner, {Limit, Skip}}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_owner"}, [
-        {key, Owner}, {limit, Limit}, {skip, Skip}, descending
-    ]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_rows(Rows), State};
-handle_call({list_public_by_owner_by_language, Owner, Language, {Limit, Skip}}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_owner_by_language"}, [
-        {key, [Owner, Language]}, {limit, Limit}, {skip, Skip}, descending
-    ]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_rows(Rows), State};
-handle_call({count_by_owner, Owner}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_by_owner"}, [{key, Owner}, group]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_count(format_rows(Rows)), State};
-handle_call({count_by_owner_by_language, Owner, Language}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_by_owner_by_language"}, [
-        {key, [Owner, Language]}, group]
-    ),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_count(format_rows(Rows)), State};
-handle_call({count_public}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public"}, []),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_count(format_rows(Rows)), State};
-handle_call({count_public_by_language, Language}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public_by_language"}, [
-        {key, Language}
-    ]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_count(format_rows(Rows)), State};
-handle_call({count_public_by_owner, Owner}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public_by_owner"}, [{key, Owner}, group]),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_count(format_rows(Rows)), State};
-handle_call({count_public_by_owner_by_language, Owner, Language}, _From, State=#state{db=Db}) ->
-    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public_by_owner_by_language"}, [
-        {key, [Owner, Language]}, group]
-    ),
-    Rows = util:jiffy_to_jsx_terms(Data),
-    {reply, format_count(format_rows(Rows)), State};
-handle_call({get, Id}, _From, State=#state{db=Db}) ->
-    Res = case couchbeam:open_doc(Db, Id) of
-        {ok, Data} -> {ok, util:jiffy_to_jsx_terms(Data)};
-        Error -> Error
-    end,
-    {reply, Res, State};
-handle_call({save, Snippet}, _From, State=#state{db=Db}) ->
-    {ok, Res} = couchbeam:save_doc(Db, util:jsx_to_jiffy_terms(Snippet)),
-    {reply, util:jiffy_to_jsx_terms(Res), State};
-handle_call({delete, Snippet}, _From, State=#state{db=Db}) ->
-    couchbeam:delete_doc(Db, util:jsx_to_jiffy_terms(Snippet)),
-    {reply, ok, State};
+handle_call({get_db}, _From, State=#state{db=Db}) ->
+    {reply, Db, State};
 handle_call(_Event, _From, State) ->
     {noreply, State}.
 
@@ -361,50 +284,112 @@ code_change(_OldVsc, State, _Extra) ->
 terminate(Reason, _State) ->
     Reason.
 
-list_by_owner(Owner, Pagination) ->
-    gen_server:call(?MODULE, {list_by_owner, Owner, Pagination}).
+list_by_owner(Owner, {Limit, Skip}) ->
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner"}, [
+        {key, Owner}, {limit, Limit}, {skip, Skip}, descending
+    ]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_rows(Rows).
 
-list_by_owner_by_language(Owner, Language, Pagination) ->
-    gen_server:call(?MODULE, {list_by_owner_by_language, Owner, Language, Pagination}).
+list_by_owner_by_language(Owner, Language, {Limit, Skip}) ->
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_by_owner_by_language"}, [
+        {key, [Owner, Language]}, {limit, Limit}, {skip, Skip}, descending
+    ]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_rows(Rows).
 
-list_public(Pagination) ->
-    gen_server:call(?MODULE, {list_public, Pagination}).
+list_public({Limit, Skip}) ->
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public"}, [
+        {limit, Limit}, {skip, Skip}, descending
+    ]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_rows(Rows).
 
-list_public_by_language(Language, Pagination) ->
-    gen_server:call(?MODULE, {list_public_by_language, Language, Pagination}).
+list_public_by_language(Language, {Limit, Skip}) ->
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_language"}, [
+        {key, Language}, {limit, Limit}, {skip, Skip}, descending
+    ]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_rows(Rows).
 
-list_public_by_owner(Owner, Pagination) ->
-    gen_server:call(?MODULE, {list_public_by_owner, Owner, Pagination}).
+list_public_by_owner(Owner, {Limit, Skip}) ->
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_owner"}, [
+        {key, Owner}, {limit, Limit}, {skip, Skip}, descending
+    ]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_rows(Rows).
 
-list_public_by_owner_by_language(Owner, Language, Pagination) ->
-    gen_server:call(?MODULE, {list_public_by_owner_by_language, Owner, Language, Pagination}).
+list_public_by_owner_by_language(Owner, Language, {Limit, Skip}) ->
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "list_public_by_owner_by_language"}, [
+        {key, [Owner, Language]}, {limit, Limit}, {skip, Skip}, descending
+    ]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_rows(Rows).
 
 count_by_owner(Owner) ->
-    gen_server:call(?MODULE, {count_by_owner, Owner}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_by_owner"}, [{key, Owner}, group]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_count(format_rows(Rows)).
 
 count_by_owner_by_language(Owner, Language) ->
-    gen_server:call(?MODULE, {count_by_owner_by_language, Owner, Language}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_by_owner_by_language"}, [
+        {key, [Owner, Language]}, group]
+    ),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_count(format_rows(Rows)).
 
 count_public() ->
-    gen_server:call(?MODULE, {count_public}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public"}, []),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_count(format_rows(Rows)).
 
 count_public_by_language(Language) ->
-    gen_server:call(?MODULE, {count_public_by_language, Language}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public_by_language"}, [
+        {key, Language}
+    ]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_count(format_rows(Rows)).
 
 count_public_by_owner(Owner) ->
-    gen_server:call(?MODULE, {count_public_by_owner, Owner}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public_by_owner"}, [{key, Owner}, group]),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_count(format_rows(Rows)).
 
 count_public_by_owner_by_language(Owner, Language) ->
-    gen_server:call(?MODULE, {count_public_by_owner_by_language, Owner, Language}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Data} = couchbeam_view:fetch(Db, {"snippets", "count_public_by_owner_by_language"}, [
+        {key, [Owner, Language]}, group]
+    ),
+    Rows = util:jiffy_to_jsx_terms(Data),
+    format_count(format_rows(Rows)).
 
 get(Id) ->
-    gen_server:call(?MODULE, {get, Id}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    case couchbeam:open_doc(Db, Id) of
+        {ok, Data} -> {ok, util:jiffy_to_jsx_terms(Data)};
+        Error -> Error
+    end.
 
 save(Snippet) ->
-    gen_server:call(?MODULE, {save, Snippet}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    {ok, Res} = couchbeam:save_doc(Db, util:jsx_to_jiffy_terms(Snippet)),
+    util:jiffy_to_jsx_terms(Res).
 
 delete(Snippet) ->
-    gen_server:call(?MODULE, {delete, Snippet}).
+    Db = gen_server:call(?MODULE, {get_db}),
+    couchbeam:delete_doc(Db, util:jsx_to_jiffy_terms(Snippet)),
+    ok.
 
 format_rows(Rows) ->
     [proplists:get_value(<<"value">>, X) || X <- Rows].
