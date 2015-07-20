@@ -146,14 +146,7 @@ get_user_id(Token) ->
         Error -> Error
     end.
 
-normalize(<<"anonymous">>=UserId, Data) ->
-    % Ensure that anonymous snippets are public
-    NewData = [{<<"public">>, true}|proplists:delete(<<"public">>, Data)],
-    normalize_foo(UserId, NewData);
 normalize(UserId, Data) ->
-    normalize_foo(UserId, Data).
-
-normalize_foo(UserId, Data) ->
     Files = [normalize_file(X) || X <- proplists:get_value(<<"files">>, Data, [])],
     [
         {<<"language">>, proplists:get_value(<<"language">>, Data, <<>>)},
