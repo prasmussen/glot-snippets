@@ -84,7 +84,8 @@ list(Req, State=#state{user_id=UserId, pagination={PageNo, PerPage}}) ->
     {Snippets, TotalCount} = case UserId of
         <<"anonymous">> ->
             {Owner, _} = cowboy_req:qs_val(<<"owner">>, Req, all_owners),
-            list_public(Owner, Language, {PageNo, PerPage});
+            {InclUntitled, _} = cowboy_req:qs_val(<<"include_untitled">>, Req, <<"true">>),
+            list_public(Owner, Language, {PageNo, PerPage}, InclUntitled);
         _ ->
             list_non_public(UserId, Language, {PageNo, PerPage})
     end,
@@ -96,22 +97,39 @@ list(Req, State=#state{user_id=UserId, pagination={PageNo, PerPage}}) ->
     ),
     {prepare_list_response(Snippets), Req3, State}.
 
-list_public(all_owners, all_languages, Pagination) ->
+list_public(all_owners, all_languages, Pagination, <<"true">>) ->
     {snippet:list_public(Pagination), snippet:count_public()};
-list_public(all_owners, Language, Pagination) ->
+list_public(all_owners, all_languages, Pagination, _) ->
+    {snippet:list_public_excl_untitled(Pagination), snippet:count_public_excl_untitled()};
+list_public(all_owners, Language, Pagination, <<"true">>) ->
     {
         snippet:list_public_by_language(Language, Pagination),
         snippet:count_public_by_language(Language)
     };
-list_public(Owner, all_languages, Pagination) ->
+list_public(all_owners, Language, Pagination, _) ->
+    {
+        snippet:list_public_by_language_excl_untitled(Language, Pagination),
+        snippet:count_public_by_language_excl_untitled(Language)
+    };
+list_public(Owner, all_languages, Pagination, <<"true">>) ->
     {
         snippet:list_public_by_owner(Owner, Pagination),
         snippet:count_public_by_owner(Owner)
     };
-list_public(Owner, Language, Pagination) ->
+list_public(Owner, all_languages, Pagination, _) ->
+    {
+        snippet:list_public_by_owner_excl_untitled(Owner, Pagination),
+        snippet:count_public_by_owner_excl_untitled(Owner)
+    };
+list_public(Owner, Language, Pagination, <<"true">>) ->
     {
         snippet:list_public_by_owner_by_language(Owner, Language, Pagination),
         snippet:count_public_by_owner_by_language(Owner, Language)
+    };
+list_public(Owner, Language, Pagination, _) ->
+    {
+        snippet:list_public_by_owner_by_language_excl_untitled(Owner, Language, Pagination),
+        snippet:count_public_by_owner_by_language_excl_untitled(Owner, Language)
     }.
 
 list_non_public(Owner, all_languages, Pagination) ->
