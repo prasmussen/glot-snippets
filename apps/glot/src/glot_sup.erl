@@ -23,8 +23,8 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    MaxRestart = 5,
-    MaxTime = 10,
+    MaxRestart = 600,
+    MaxTime = 60,
 
     Children = [
         ?CHILD(http_log_srv, worker),
