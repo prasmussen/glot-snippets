@@ -8,9 +8,6 @@ Snippets can be stored anonymously or as a user by including an api token
 with the request. CouchDB is used as the datastore.
 The api is described [here](https://github.com/prasmussen/glot-snippets/tree/master/api_docs).
 
-### Downloads
-- [glot-snippets-linux-x64.tar.gz v1.0.0](https://drive.google.com/uc?id=0B3X9GlR6EmbnWUJtZG91S01tZXc)
-
 ## Run
 The download above is a standard erlang release that includes a start script.
 To start glot-snippets in the foreground type: `glot/bin/glot foreground`.
