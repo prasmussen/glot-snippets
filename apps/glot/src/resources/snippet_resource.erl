@@ -140,7 +140,7 @@ normalize(UserId, Data) ->
     Files = [normalize_file(X) || X <- proplists:get_value(<<"files">>, Data, [])],
     [
         {<<"language">>, proplists:get_value(<<"language">>, Data, <<"plaintext">>)},
-        {<<"title">>, proplists:get_value(<<"title">>, Data, <<"untitled">>)},
+        {<<"title">>, util:get_bin_value(<<"title">>, Data, <<"untitled">>)},
         {<<"public">>, util:get_bool_value(<<"public">>, Data, false)},
         {<<"owner">>, UserId},
         {<<"files">>, Files}

@@ -5,6 +5,7 @@
     ceil/1,
     join/2,
     get_bool_value/3,
+    get_bin_value/3,
     pid_to_binary/1,
     microseconds_since_epoch/0,
     microseconds_to_timestamp/1,
@@ -92,3 +93,11 @@ get_bool_value(Key, Proplist, Default) ->
         true -> true;
         _ -> Default
     end.
+
+get_bin_value(Key, Proplist, Default) ->
+    Value = proplists:get_value(Key, Proplist, Default),
+    format_bin_value(Value, Default).
+
+format_bin_value(<<"">>, Default) -> Default;
+format_bin_value(Value, _) when is_binary(Value) -> Value;
+format_bin_value(_, Default) -> Default.
