@@ -4,6 +4,7 @@
     sha1/1,
     ceil/1,
     join/2,
+    get_bool_value/3,
     pid_to_binary/1,
     microseconds_since_epoch/0,
     microseconds_to_timestamp/1,
@@ -85,3 +86,9 @@ join(Parts, Sep) ->
         [X, Sep|Acc]
     end, [], Parts),
     iolist_to_binary(lists:droplast(L)).
+
+get_bool_value(Key, Proplist, Default) ->
+    case proplists:get_value(Key, Proplist) of
+        true -> true;
+        _ -> Default
+    end.

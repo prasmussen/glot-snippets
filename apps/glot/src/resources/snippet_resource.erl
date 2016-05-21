@@ -141,7 +141,7 @@ normalize(UserId, Data) ->
     [
         {<<"language">>, proplists:get_value(<<"language">>, Data, <<"plaintext">>)},
         {<<"title">>, proplists:get_value(<<"title">>, Data, <<"untitled">>)},
-        {<<"public">>, proplists:get_value(<<"public">>, Data, false)},
+        {<<"public">>, util:get_bool_value(<<"public">>, Data, false)},
         {<<"owner">>, UserId},
         {<<"files">>, Files}
     ].
