@@ -139,7 +139,7 @@ get_url(Id) ->
 normalize(UserId, Data) ->
     Files = [normalize_file(X) || X <- proplists:get_value(<<"files">>, Data, [])],
     [
-        {<<"language">>, proplists:get_value(<<"language">>, Data, <<"plaintext">>)},
+        {<<"language">>, util:get_bin_value(<<"language">>, Data, <<"plaintext">>)},
         {<<"title">>, util:get_bin_value(<<"title">>, Data, <<"untitled">>)},
         {<<"public">>, util:get_bool_value(<<"public">>, Data, false)},
         {<<"owner">>, UserId},
@@ -148,6 +148,6 @@ normalize(UserId, Data) ->
 
 normalize_file(Data) ->
     [
-        {<<"name">>, proplists:get_value(<<"name">>, Data, <<"untitled">>)},
-        {<<"content">>, proplists:get_value(<<"content">>, Data, <<>>)}
+        {<<"name">>, util:get_bin_value(<<"name">>, Data, <<"untitled">>)},
+        {<<"content">>, util:get_bin_value(<<"content">>, Data, <<>>)}
     ].
