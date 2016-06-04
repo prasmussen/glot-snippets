@@ -1,6 +1,8 @@
 FROM alpine
 MAINTAINER javiertitan@gmail.com
 
+COPY . /glot-snippets/
+
 RUN export DEPS="\
 	git \
 	erlang \
@@ -62,7 +64,6 @@ RUN export DEPS="\
  git clone https://github.com/erlang/rebar3.git /rebar3 &&\
  cd /rebar3 &&\
  escript bootstrap &&\
- git clone https://github.com/prasmussen/glot-snippets.git /glot-snippets &&\
  cd /glot-snippets &&\
  /rebar3/rebar3 compile &&\
  /rebar3/rebar3 release -c config/relx.config &&\
