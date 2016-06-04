@@ -10,4 +10,4 @@ export BASE_URL="http://localhost:8091"
 export ADMIN_TOKEN="clumeterin"
 
 cd `dirname $0`
-exec erl -pa $PWD/apps/*/ebin $PWD/deps/*/ebin -s glot
+rebar3 shell --apps glot

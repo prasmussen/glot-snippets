@@ -17,3 +17,5 @@ Session.vim
 env_prod.sh
 env_dev.sh
 scripts/snippets.glot.io
+_build
+rebar.lock

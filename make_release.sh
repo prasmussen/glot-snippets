@@ -1,8 +1,10 @@
 #!/bin/bash
 
-rm -rf _rel
-relx -c config/relx.config
+rebar3 compile
+rebar3 release -c config/relx.config
+root_path=$(pwd)
 
-cd _rel
-tar -czf glot-snippets.tar.gz glot
-cd -
+(
+    cd _build/default/rel
+    tar -czf ${root_path}/glot-snippets.tar.gz glot
+)
