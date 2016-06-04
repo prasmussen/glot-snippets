@@ -146,7 +146,7 @@ prepare_save(Data) ->
     ].
 
 prepare_update(Id, Rev, Data) ->
-    Now = iso8601:format(now()),
+    Now = iso8601:format(os:timestamp()),
     [
         {<<"_id">>, Id},
         {<<"_rev">>, Rev},

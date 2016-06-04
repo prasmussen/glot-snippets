@@ -35,7 +35,7 @@ pid_to_binary(Pid) ->
     list_to_binary(pid_to_list(Pid)).
 
 microseconds_since_epoch() ->
-    {Megasecs, Secs, Microsecs} = now(),
+    {Megasecs, Secs, Microsecs} = os:timestamp(),
     (Megasecs * 1000000 + Secs) * 1000000 + Microsecs.
 
 microseconds_to_timestamp(N) ->
