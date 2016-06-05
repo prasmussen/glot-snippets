@@ -37,7 +37,7 @@ delete(Id, Rev) ->
     user_srv:delete(Doc).
 
 prepare_save(Data) ->
-    Now = iso8601:format(now()),
+    Now = iso8601:format(os:timestamp()),
     [
         {<<"_id">>, identifier()},
         {<<"created">>, Now},
@@ -46,7 +46,7 @@ prepare_save(Data) ->
     ].
 
 prepare_update(Id, OldUser, Data) ->
-    Now = iso8601:format(now()),
+    Now = iso8601:format(os:timestamp()),
     [
         {<<"_id">>, Id},
         {<<"_rev">>, proplists:get_value(<<"_rev">>, OldUser)},
