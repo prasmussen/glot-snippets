@@ -1,6 +1,7 @@
 glot-snippets
 =============
 
+[![Build Status](https://travis-ci.org/prasmussen/glot-snippets.svg?branch=master)](https://travis-ci.org/prasmussen/glot-snippets)
 
 ## Overview
 glot-snippets provides a http api for storing and managing snippets.
