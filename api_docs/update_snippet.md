@@ -5,7 +5,7 @@
     curl --request PUT \
          --header 'Authorization: Token 0123456-789a-bcde-f012-3456789abcde' \
          --header 'Content-type: application/json' \
-         --data '{"language": "python", "test - updated": "test", "public": false, "files": [{"name": "main.py", "content": "print(42)"}]}' \
+         --data '{"language": "python", "title": "test - updated", "public": false, "files": [{"name": "main.py", "content": "print(42)"}]}' \
          --url 'https://snippets.glot.io/snippets/e374yxuw49'
 
 ### Example request data
