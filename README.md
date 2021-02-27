@@ -1,6 +1,10 @@
 glot-snippets
 =============
 
+## THIS REPO IS DEPRECATED
+## THE LOGIC HAS BEEN REIMPLEMENTED IN [glot-www](https://github.com/glotcode/glot-www) AND IS NO LONGER REQUIRED
+
+
 [![Build Status](https://travis-ci.org/prasmussen/glot-snippets.svg?branch=master)](https://travis-ci.org/prasmussen/glot-snippets)
 
 ## Overview
